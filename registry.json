@@ -1,0 +1,73 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "aperture",
+  "homepage": "https://acme.com",
+  "items": [
+    
+    {
+      "name": "biometric-login",
+      "type": "registry:component",
+      "title": "Biometric Login",
+      "description": "A component for biometric login",
+      "registryDependencies": ["button"],
+      "files": [
+        {
+          "path": "registry/new-york/blocks/biometric-login/login-button.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "registry/new-york/blocks/biometric-login/register-button.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "registry/new-york/blocks/biometric-login/lib/webauthn-types.ts",
+          "type": "registry:lib"
+        } ,
+        {
+          "path": "registry/new-york/blocks/biometric-login/lib/webauthn.ts",
+          "type": "registry:lib"
+        }
+        
+      ]
+    },
+    {
+      "name": "nfc-reader",
+      "type": "registry:component",
+      "title": "NFC Reader",
+      "description": "A component for reading NFC tags",
+      "registryDependencies": ["button"],
+      "files": [
+        {
+          "path": "registry/new-york/blocks/nfc-reader/nfc-reader.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "share-button",
+      "type": "registry:component",
+      "title": "Share Button",
+      "description": "A share button component",
+      "registryDependencies": ["button"],
+      "files": [
+        {
+          "path": "registry/new-york/blocks/share-button/share-button.tsx",
+          "type": "registry:component"
+        }
+      ] 
+    },
+    {
+      "name": "wake-lock-toggle",
+      "type": "registry:component",
+      "title": "Wake Lock Toggle",
+      "description": "A component for toggling wake lock",
+      "registryDependencies": ["wake-lock-toggle"],
+      "files": [
+        {
+          "path": "registry/new-york/blocks/wake-lock-toggle/wake-lock-toggle.tsx",
+          "type": "registry:component"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "share-button",
+  "type": "registry:component",
+  "title": "Share Button",
+  "description": "A share button component",
+  "registryDependencies": [
+    "button"
+  ],
+  "files": [
+    {
+      "path": "registry/new-york/blocks/share-button/share-button.tsx",
+      "content": "\"use client\"\nimport { cn } from \"@/lib/utils\";\nimport { Button } from \"@/registry/new-york/ui/button\";\nimport { useState } from \"react\";\n\ntype ShareButtonProps = {\n    title: string;\n    text: string;\n    url: string;\n    children?: React.ReactNode;\n    className?: string;\n}\n\nexport function ShareButton({ title, text, url, className, children }: ShareButtonProps) {\n    const [isSharing, setIsSharing] = useState(false);\n\n    const handleShare = async () => {\n        if (isSharing) return;\n\n        if (navigator.share && navigator.canShare({ title, text, url })) {\n            try {\n                setIsSharing(true);\n                await navigator.share({ title, text, url });\n            } catch (error) {\n                // Only log actual errors, not user cancellations\n                if (error instanceof Error && error.name !== 'AbortError') {\n                    console.error(\"Error sharing:\", error);\n                }\n            } finally {\n                setIsSharing(false);\n            }\n        } else {\n            alert(\"Sharing is not supported in this browser.\");\n        }\n    };\n\n    return <>\n        <Button onClick={handleShare}\n            type=\"button\"\n            disabled={isSharing}\n            className={cn(className)}\n            aria-label={`Share ${title}`}>\n            {children || \"Share\"}\n        </Button>\n    </>\n}",
+      "type": "registry:component"
+    }
+  ]
+}
