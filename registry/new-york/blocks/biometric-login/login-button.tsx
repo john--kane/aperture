@@ -1,11 +1,10 @@
 "use client"
 
+import { handleAuthentication, isWebAuthnSupported } from "@/registry/new-york/blocks/biometric-login/lib/webauthn"
 import type { AuthenticationStatus } from "@/registry/new-york/blocks/biometric-login/lib/webauthn-types"
 import { Button } from "@/registry/new-york/ui/button"
 import { FingerprintIcon, LoaderCircleIcon } from "lucide-react"
 import { useEffect, useState } from "react"
-import { toast } from "sonner"
-import { handleAuthentication, isWebAuthnSupported } from "./lib/webauthn"
 
 type LoginButtonProps = {
     authenticateUrl?: string
@@ -15,18 +14,16 @@ type LoginButtonProps = {
     onAuthenticationSuccess?: (credential: Credential | null) => void
     onError?: (error: Error) => void
     disabled?: boolean
-    showNotifications?: boolean
 }
 
 export function LoginButton({
-    authenticateUrl = "/api/webauthn/authenticate",
-    verifyUrl = "/api/webauthn/verify",
+    authenticateUrl,
+    verifyUrl,
     username = "user@example.com",
     onStatusChange,
     onAuthenticationSuccess,
     onError,
-    disabled = false,
-    showNotifications = true
+    disabled = false
 }: LoginButtonProps) {
     const [isAuthenticating, setIsAuthenticating] = useState(false)
     const [isSupported, setIsSupported] = useState<boolean>(false)
@@ -39,14 +36,6 @@ export function LoginButton({
                 const supported = isWebAuthnSupported()
                 setIsSupported(supported)
 
-                if (showNotifications) {
-                    if (supported) {
-                        toast.success("Biometric authentication is supported")
-                    } else {
-                        toast.error("Biometric authentication is not supported in your browser")
-                    }
-                }
-
                 if (!supported) {
                     const error = new Error("Biometric authentication is not supported in your browser. Please try a different browser or device.")
                     onError?.(error)
@@ -57,55 +46,44 @@ export function LoginButton({
         }
 
         checkSupport()
-    }, [onError, showNotifications])
+    }, [onError])
 
     const handleClick = async () => {
         if (!isSupported) return
 
         try {
             setIsAuthenticating(true)
-            if (showNotifications) {
-                toast.loading("Waiting for biometric verification...")
-            }
 
-            await handleAuthentication(
-                authenticateUrl,
-                verifyUrl,
-                username,
-                (status) => {
-                    onStatusChange?.(status)
-                    if (showNotifications) {
-                        switch (status) {
-                            case "authenticating":
-                                toast.loading("Verifying your identity...")
-                                break
-                            case "success":
-                                toast.success("Authentication successful!")
-                                break
-                            case "error":
-                                toast.error("Authentication failed")
-                                break
-                        }
+            if (authenticateUrl && verifyUrl) {
+                await handleAuthentication(
+                    authenticateUrl,
+                    verifyUrl,
+                    username,
+                    (status) => {
+                        onStatusChange?.(status)
+                    },
+                    (credential) => {
+                        onAuthenticationSuccess?.(credential)
+                    },
+                    (error) => {
+                        onError?.(error)
                     }
-                },
-                (credential) => {
-                    onAuthenticationSuccess?.(credential)
-                    if (showNotifications) {
-                        toast.success("Biometric verification complete")
+                )
+            } else {
+                // Direct authentication without challenge
+                const credential = await navigator.credentials.get({
+                    publicKey: {
+                        challenge: new Uint8Array(32),
+                        rpId: window.location.hostname,
+                        allowCredentials: [],
+                        userVerification: "required",
                     }
-                },
-                (error) => {
-                    onError?.(error)
-                    if (showNotifications) {
-                        toast.error(error.message)
-                    }
-                }
-            )
+                })
+                onAuthenticationSuccess?.(credential)
+            }
         } catch (error) {
             console.error("Authentication error:", error)
-            if (showNotifications) {
-                toast.error("An unexpected error occurred during authentication")
-            }
+            onError?.(error instanceof Error ? error : new Error("An unexpected error occurred during authentication"))
         } finally {
             setIsAuthenticating(false)
         }

@@ -1,5 +1,6 @@
 "use client"
 
+import { handleRegistration, isWebAuthnSupported } from "@/registry/new-york/blocks/biometric-login/lib/webauthn"
 import type { AuthenticationStatus } from "@/registry/new-york/blocks/biometric-login/lib/webauthn-types"
 import { Button } from "@/registry/new-york/ui/button"
 import { FingerprintIcon, LoaderCircleIcon } from "lucide-react"
@@ -9,28 +10,18 @@ type RegisterButtonProps = {
     registerUrl?: string
     verifyUrl?: string
     username?: string
+    displayName?: string
     onStatusChange?: (status: AuthenticationStatus) => void
     onRegistrationSuccess?: (credential: Credential | null) => void
     onError?: (error: Error) => void
     disabled?: boolean
 }
 
-// Helper function to convert base64url to Uint8Array
-function base64UrlToUint8Array(base64Url: string): Uint8Array {
-    const padding = '='.repeat((4 - (base64Url.length % 4)) % 4)
-    const base64 = (base64Url + padding).replace(/-/g, '+').replace(/_/g, '/')
-    const rawData = atob(base64)
-    const outputArray = new Uint8Array(rawData.length)
-    for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i)
-    }
-    return outputArray
-}
-
 export function RegisterButton({
-    registerUrl = "/api/webauthn/register",
-    verifyUrl = "/api/webauthn/verify",
+    registerUrl,
+    verifyUrl,
     username = "user@example.com",
+    displayName = "User",
     onStatusChange,
     onRegistrationSuccess,
     onError,
@@ -38,70 +29,75 @@ export function RegisterButton({
 }: RegisterButtonProps) {
     const [isRegistering, setIsRegistering] = useState(false)
     const [isSupported, setIsSupported] = useState<boolean>(false)
+    const [isCheckingSupport, setIsCheckingSupport] = useState(true)
 
     useEffect(() => {
-        const isWebAuthnSupported =
-            typeof window !== 'undefined' &&
-            typeof window.PublicKeyCredential !== 'undefined' &&
-            typeof navigator.credentials !== 'undefined' &&
-            typeof navigator.credentials.create !== 'undefined'
+        const checkSupport = async () => {
+            try {
+                setIsCheckingSupport(true)
+                const supported = isWebAuthnSupported()
+                setIsSupported(supported)
 
-        setIsSupported(isWebAuthnSupported)
-
-        if (!isWebAuthnSupported) {
-            const error = new Error("Biometric authentication is not supported in your browser. Please try a different browser or device.")
-            onError?.(error)
+                if (!supported) {
+                    const error = new Error("Biometric authentication is not supported in your browser. Please try a different browser or device.")
+                    onError?.(error)
+                }
+            } finally {
+                setIsCheckingSupport(false)
+            }
         }
+
+        checkSupport()
     }, [onError])
 
-    const handleRegistration = async () => {
+    const handleClick = async () => {
         if (!isSupported) return
 
         try {
-            onStatusChange?.("authenticating")
             setIsRegistering(true)
 
-            const response = await fetch(registerUrl, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username })
-            })
-
-            if (!response.ok) throw new Error("Failed to get registration options")
-
-            const options = await response.json()
-
-            const credential = await navigator.credentials.create({
-                publicKey: {
-                    ...options,
-                    challenge: base64UrlToUint8Array(options.challenge),
-                    user: {
-                        ...options.user,
-                        id: base64UrlToUint8Array(options.user.id)
+            if (registerUrl && verifyUrl) {
+                await handleRegistration(
+                    registerUrl,
+                    verifyUrl,
+                    username,
+                    onStatusChange,
+                    onRegistrationSuccess,
+                    onError
+                )
+            } else {
+                // Direct registration without challenge
+                const credential = await navigator.credentials.create({
+                    publicKey: {
+                        rp: {
+                            name: "WebAuthn Demo",
+                            id: window.location.hostname,
+                        },
+                        user: {
+                            id: new Uint8Array(16),
+                            name: username,
+                            displayName: displayName,
+                        },
+                        pubKeyCredParams: [
+                            { type: "public-key", alg: -7 },  // ES256
+                            { type: "public-key", alg: -257 }, // RS256
+                        ],
+                        authenticatorSelection: {
+                            authenticatorAttachment: "platform",
+                            userVerification: "required",
+                            requireResidentKey: false,
+                        },
+                        attestation: "none",
+                        challenge: new Uint8Array(32),
                     }
-                }
-            })
-
-            if (!credential) throw new Error("Failed to create credential")
-
-            const verifyResponse = await fetch(verifyUrl, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    credential,
-                    type: "registration"
                 })
-            })
-
-            if (!verifyResponse.ok) throw new Error("Failed to verify credential")
-
-            onStatusChange?.("success")
-            onRegistrationSuccess?.(credential)
+                onStatusChange?.("success")
+                onRegistrationSuccess?.(credential)
+            }
         } catch (error) {
-            const err = error instanceof Error ? error : new Error("Registration failed")
-            onStatusChange?.("error")
-            onError?.(err)
             console.error("Registration error:", error)
+            onStatusChange?.("error")
+            onError?.(error instanceof Error ? error : new Error("An unexpected error occurred during registration"))
         } finally {
             setIsRegistering(false)
         }
@@ -109,12 +105,17 @@ export function RegisterButton({
 
     return (
         <Button
-            onClick={handleRegistration}
+            onClick={handleClick}
             className="w-full"
-            disabled={disabled || !isSupported}
+            disabled={disabled || !isSupported || isCheckingSupport}
             aria-label="Register biometric credentials"
         >
-            {isRegistering ? (
+            {isCheckingSupport ? (
+                <>
+                    <LoaderCircleIcon className="mr-2 h-4 w-4 animate-spin" />
+                    Checking support...
+                </>
+            ) : isRegistering ? (
                 <>
                     <LoaderCircleIcon className="mr-2 h-4 w-4 animate-spin" />
                     Registering...
@@ -122,7 +123,7 @@ export function RegisterButton({
             ) : (
                 <>
                     <FingerprintIcon className="mr-2 h-4 w-4" />
-                    Register Biometric Credentials
+                    Register Biometrics
                 </>
             )}
         </Button>

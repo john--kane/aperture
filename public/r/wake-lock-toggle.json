@@ -5,7 +5,7 @@
   "title": "Wake Lock Toggle",
   "description": "A component for toggling wake lock",
   "registryDependencies": [
-    "wake-lock-toggle"
+    "button"
   ],
   "files": [
     {
