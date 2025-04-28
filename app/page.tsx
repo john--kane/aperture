@@ -60,7 +60,7 @@ export default function Home() {
           <Card className="w-full max-w-md mx-auto shadow-none border-none">
             <CardHeader>
               <CardTitle className="text-2xl font-bold">Biometric Authentication</CardTitle>
-              <CardDescription>Sign in securely using your device's biometric sensors</CardDescription>
+              <CardDescription>Sign in securely using your device&apos;s biometric sensors</CardDescription>
             </CardHeader>
 
             <CardContent>
@@ -86,10 +86,15 @@ export default function Home() {
 
         <ControlWrapper v0name="wake-lock-toggle" description="Wake Lock Toggle">
           <div className="flex flex-col space-y-4">
-
             {wakeLockError && (
               <p className="text-sm text-destructive" role="alert">
                 {wakeLockError}
+              </p>
+            )}
+
+            {wakeLockSupported === false && (
+              <p className="text-sm text-muted-foreground" role="alert">
+                Wake lock is not supported in your browser
               </p>
             )}
 
@@ -120,8 +125,6 @@ export default function Home() {
                   setWakeLockSupported(isSupported)
                 }}
               />
-
-
             </div>
 
             <div className="flex items-center justify-center">
