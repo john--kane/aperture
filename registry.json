@@ -66,6 +66,10 @@
         {
           "path": "registry/new-york/blocks/wake-lock-toggle/wake-lock-toggle.tsx",
           "type": "registry:component"
+        },
+        {
+          "path": "registry/new-york/blocks/wake-lock-toggle/lib/wake-lock-utils.ts",
+          "type": "registry:lib"
         }
       ]
     }

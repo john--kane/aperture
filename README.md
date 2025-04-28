@@ -15,21 +15,23 @@ A secure authentication component that supports biometric authentication (finger
 
 #### Installation
 ```bash
-pnpm dlx shadcn@latest add https://aperture.kaneleuc.com/r/biometric-login.json
+pnpm dlx shadcn@latest add https://aperture.kaneleuc.com/r/login-button.json
+pnpm dlx shadcn@latest add https://aperture.kaneleuc.com/r/register-button.json
 ```
 
 #### Usage
 ```tsx
-import { BiometricLogin } from "@/registry/new-york/blocks/biometric-login"
+import { LoginButton } from "@/registry/new-york/blocks/biometric-login/login-button"
+import { RegisterButton } from "@/registry/new-york/blocks/biometric-login/register-button"
 
 // Registration
-<BiometricLogin.RegisterButton
+<RegisterButton
   onSuccess={(credential) => console.log("Registration successful", credential)}
   onError={(error) => console.error("Registration failed", error)}
 />
 
 // Login
-<BiometricLogin.LoginButton
+<LoginButton
   onSuccess={(credential) => console.log("Login successful", credential)}
   onError={(error) => console.error("Login failed", error)}
 />
